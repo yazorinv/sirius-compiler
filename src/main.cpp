@@ -9,6 +9,7 @@ int main() {
     nlohmann::json json;
     std::cin >> json;
 
-    auto res = compiler::compiler(json);
-    std::cout << to_string(res) << '\n';
+
+    compiler::Compiler compiler;
+    std::cout << to_string(compiler(json)) << '\n';
 }

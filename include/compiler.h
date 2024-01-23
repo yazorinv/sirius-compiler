@@ -1,4 +1,6 @@
 #pragma once
+#include <functional>
+#include <map>
 #include <nlohmann/json.hpp>
 #include <string>
 
@@ -6,9 +8,37 @@
 namespace compiler {
 
 
-nlohmann::json compiler(const nlohmann::json& json);
+using Json = nlohmann::json;
 
 
-void dfs(const nlohmann::json& json, nlohmann::json& res);
+class Compiler {
+   private:
+    std::map<std::string, std::function<void(Compiler&, const Json&)>> fn;
+    Json result_program;
+    // More state for compiler
+
+    void dfs(const Json& json);
+
+   public:
+    Compiler();
+    Compiler(const Compiler&) = default;
+    Compiler(Compiler&&) noexcept = default;
+    ~Compiler() noexcept = default;
+
+    Compiler& operator=(const Compiler&) = default;
+    Compiler& operator=(Compiler&&) noexcept = default;
+
+
+    void clear(const bool clear_all = false);
+
+
+    Json operator()(const Json& json);
+
+
+    void add_constant(const Json& json);
+    void add_variable(const Json& json);
+    void add_binary_operator(const Json& json);
+};
+
 
 }  // namespace compiler
