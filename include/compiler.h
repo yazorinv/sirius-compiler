@@ -15,7 +15,9 @@ class Compiler {
    private:
     std::map<std::string, std::function<void(Compiler&, const Json&)>> fn;
     Json result_program;
-    // More state for compiler
+
+    int if_else_count = 0;
+    int while_count = 0;
 
     void dfs(const Json& json);
 
@@ -47,6 +49,8 @@ class Compiler {
 
     void add_if(const Json& json);
     void add_while(const Json& json);
+
+    void add_sequence(const Json& json);
 };
 
 
