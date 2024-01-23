@@ -38,6 +38,15 @@ class Compiler {
     void add_constant(const Json& json);
     void add_variable(const Json& json);
     void add_binary_operator(const Json& json);
+
+
+    void add_assignment(const Json& json);
+
+    void add_read_console(const Json& json);
+    void add_write_console(const Json& json);
+
+    void add_if(const Json& json);
+    void add_while(const Json& json);
 };
 
 
