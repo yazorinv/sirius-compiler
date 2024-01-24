@@ -22,6 +22,10 @@ Compiler::Compiler() {
     fn["While"] = [](Compiler& compiler, const Json& json) { return compiler.add_while(json); };
 
     fn["Seq"] = [](Compiler& compiler, const Json& json) { return compiler.add_sequence(json); };
+
+
+    fn["Fun"] = [](Compiler& compiler, const Json& json) { return compiler.add_procedure(json); };
+    fn["Call"] = [](Compiler& compiler, const Json& json) { return compiler.add_call(json); };
 }
 
 
@@ -48,7 +52,14 @@ void Compiler::clear(const bool clear_all) {
 
 
 Json Compiler::operator()(const compiler::Json& json) {
-    dfs(json);
+    if (!json.contains("prog"))
+        dfs(json);
+    dfs(json["prog"]);
+    result_program.emplace_back("END");
+    if (json.contains("funs")) {
+        for (auto& t : json["funs"])
+            dfs(t);
+    }
     return result_program;
 }
 
@@ -142,11 +153,12 @@ void Compiler::add_while(const compiler::Json& json) {
     Json label_cond, label_body;
     Json jmp_cond, jmp_body;
 
-    label_cond["kind"] = label_body["kind"] = "LABEL";
-    jmp_cond["kind"] = "JMP";
-    jmp_body["kind"] = "JNZ";
-    label_cond["value"] = jmp_cond["value"] = "WHILE_COND_" + std::to_string(while_count);
-    label_body["value"] = jmp_body["value"] = "WHILE_BODY_" + std::to_string(while_count);
+    label_cond = create_label("WHILE_CONDITION_" + std::to_string(while_count));
+    label_body = create_label("WHILE_BODY_" + std::to_string(while_count));
+
+    jmp_cond = create_jmp("WHILE_CONDITION_" + std::to_string(while_count));
+    jmp_body = create_jnz("WHILE_BODY_" + std::to_string(while_count));
+
     ++while_count;
 
     result_program.emplace_back(std::move(jmp_cond));
@@ -169,11 +181,12 @@ void Compiler::add_if(const compiler::Json& json) {
     Json label_else, label_end;
     Json jmp_else, jmp_end;
 
-    label_else["kind"] = label_end["kind"] = "LABEL";
-    jmp_else["kind"] = "JZ";
-    jmp_end["kind"] = "JMP";
-    label_else["value"] = jmp_else["value"] = "IF_ELSE_" + std::to_string(if_else_count);
-    label_end["value"] = jmp_end["value"] = "IF_END_" + std::to_string(if_else_count);
+    label_else = create_label("IF_ELSE_" + std::to_string(if_else_count));
+    label_end = create_label("IF_END" + std::to_string(if_else_count));
+
+    jmp_else = create_jz("IF_ELSE_" + std::to_string(if_else_count));
+    jmp_end = create_jmp("IF_END" + std::to_string(if_else_count));
+
     ++if_else_count;
 
 
@@ -184,6 +197,73 @@ void Compiler::add_if(const compiler::Json& json) {
     result_program.emplace_back(label_else);
     dfs(json["else"]);
     result_program.emplace_back(label_end);
+}
+
+
+void Compiler::add_procedure(const nlohmann::json& json) {
+    if (!json.contains("name"))
+        throw std::logic_error("not found \"name\" for procedure");
+    if (!json.contains("params"))
+        throw std::logic_error("not found \"params\" for procedure");
+    if (!json.contains("body"))
+        throw std::logic_error("not found \"body\" for procedure");
+
+    Json proc_label = create_label("FUNCTION_" + std::string(json["name"]));
+    Json proc_begin;
+    proc_begin["kind"] = "BEGIN";
+    proc_begin["value"] = json["params"];
+    result_program.emplace_back(std::move(proc_label));
+    result_program.emplace_back(std::move(proc_begin));
+    dfs(json["body"]);
+    result_program.emplace_back("END");
+}
+
+
+void Compiler::add_call(const compiler::Json& json) {
+    if (!json.contains("func"))
+        throw std::logic_error("not found \"func\" for call procedure");
+    if (!json.contains("args"))
+        throw std::logic_error("not found \"args\" for call procedure");
+
+    auto& args = json["args"];
+    for (auto it = args.rbegin(); it != args.rend(); ++it)
+        dfs(*it);
+    Json call;
+    call["kind"] = "CALL";
+    call["value"] = "FUNCTION_" + std::string(json["func"]);
+    result_program.emplace_back(std::move(call));
+}
+
+
+Json Compiler::create_label(const std::string& label) const {
+    Json buf;
+    buf["kind"] = "LABEL";
+    buf["value"] = label;
+    return buf;
+}
+
+
+Json Compiler::create_jmp(const std::string& label) const {
+    Json buf;
+    buf["kind"] = "JMP";
+    buf["value"] = label;
+    return buf;
+}
+
+
+Json Compiler::create_jz(const std::string& label) const {
+    Json buf;
+    buf["kind"] = "JZ";
+    buf["value"] = label;
+    return buf;
+}
+
+
+Json Compiler::create_jnz(const std::string& label) const {
+    Json buf;
+    buf["kind"] = "JNZ";
+    buf["value"] = label;
+    return buf;
 }
 
 

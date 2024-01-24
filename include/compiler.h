@@ -21,6 +21,12 @@ class Compiler {
 
     void dfs(const Json& json);
 
+
+    Json create_label(const std::string& label) const;
+    Json create_jmp(const std::string& label) const;
+    Json create_jz(const std::string& label) const;
+    Json create_jnz(const std::string& label) const;
+
    public:
     Compiler();
     Compiler(const Compiler&) = default;
@@ -51,6 +57,10 @@ class Compiler {
     void add_while(const Json& json);
 
     void add_sequence(const Json& json);
+
+
+    void add_procedure(const nlohmann::json& json);
+    void add_call(const Json& json);
 };
 
 
