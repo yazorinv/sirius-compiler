@@ -11,3 +11,6 @@ add_executable(sirius_compiler
         src/main.cpp
         src/compiler.cpp
 )
+
+find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(sirius_compiler PRIVATE nlohmann_json::nlohmann_json)
